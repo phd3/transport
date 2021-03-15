@@ -24,16 +24,18 @@ import com.linkedin.transport.api.udf.StdUDF7;
 import com.linkedin.transport.api.udf.StdUDF8;
 import com.linkedin.transport.api.udf.TopLevelStdUDF;
 import com.linkedin.transport.typesystem.GenericTypeSignatureElement;
-import io.trino.metadata.BoundVariables;
 import io.trino.metadata.FunctionArgumentDefinition;
+import io.trino.metadata.FunctionBinding;
+import io.trino.metadata.FunctionDependencies;
 import io.trino.metadata.FunctionKind;
 import io.trino.metadata.FunctionMetadata;
-import io.trino.metadata.Metadata;
 import io.trino.metadata.Signature;
 import io.trino.metadata.SqlScalarFunction;
 import io.trino.metadata.TypeVariableConstraint;
+import io.trino.operator.scalar.ChoicesScalarFunctionImplementation;
 import io.trino.operator.scalar.ScalarFunctionImplementation;
 import io.trino.spi.classloader.ThreadContextClassLoader;
+import io.trino.spi.function.InvocationConvention;
 import io.trino.spi.type.IntegerType;
 import io.trino.spi.type.Type;
 import java.lang.invoke.MethodHandle;
@@ -51,7 +53,9 @@ import org.apache.commons.lang3.ClassUtils;
 
 import static io.trino.metadata.Signature.*;
 import static io.trino.metadata.SignatureBinder.*;
-import static io.trino.operator.TypeSignatureParser.parseTypeSignature;
+import static io.trino.spi.function.InvocationConvention.InvocationArgumentConvention.*;
+import static io.trino.spi.function.InvocationConvention.InvocationReturnConvention.*;
+import static io.trino.sql.analyzer.TypeSignatureTranslator.parseTypeSignature;
 import static io.trino.util.Reflection.*;
 
 // Suppressing argument naming convention for the evalInternal methods
@@ -98,8 +102,8 @@ public abstract class StdUdfWrapper extends SqlScalarFunction {
   }
 
   @Override
-  public ScalarFunctionImplementation specialize(BoundVariables boundVariables, int arity, Metadata metadata) {
-    StdFactory stdFactory = new TrinoFactory(boundVariables, metadata);
+  public ScalarFunctionImplementation specialize(FunctionBinding functionBinding, FunctionDependencies functionDependencies) {
+    StdFactory stdFactory = new TrinoFactory(functionBinding, functionDependencies);
     StdUDF stdUDF = getStdUDF();
     stdUDF.init(stdFactory);
     // Subtract a small jitter value so that refresh is triggered on first call
@@ -110,14 +114,22 @@ public abstract class StdUdfWrapper extends SqlScalarFunction {
         - (new Random()).nextInt(initialJitterInt));
     boolean[] nullableArguments = stdUDF.getAndCheckNullableArguments();
 
-    return new ScalarFunctionImplementation(true, getNullConventionForArguments(nullableArguments),
-        getMethodHandle(stdUDF, metadata, boundVariables, nullableArguments, requiredFilesNextRefreshTime));
+    List<InvocationConvention.InvocationArgumentConvention> argumentConventions = IntStream.range(0, nullableArguments.length)
+        .mapToObj(idx -> nullableArguments[idx] ? BOXED_NULLABLE : NEVER_NULL)
+        .collect(Collectors.toList());
+
+    return new ChoicesScalarFunctionImplementation(
+        functionBinding,
+        FAIL_ON_NULL,
+        argumentConventions,
+        getMethodHandle(stdUDF, functionBinding, functionDependencies, nullableArguments, requiredFilesNextRefreshTime));
+
   }
 
-  private MethodHandle getMethodHandle(StdUDF stdUDF, Metadata metadata, BoundVariables boundVariables,
+  private MethodHandle getMethodHandle(StdUDF stdUDF, FunctionBinding functionBinding, FunctionDependencies functionDependencies,
       boolean[] nullableArguments, AtomicLong requiredFilesNextRefreshTime) {
-    Type[] inputTypes = getTrinoTypes(stdUDF.getInputParameterSignatures(), metadata, boundVariables);
-    Type outputType = getTrinoType(stdUDF.getOutputParameterSignature(), metadata, boundVariables);
+    Type[] inputTypes = getTrinoTypes(stdUDF.getInputParameterSignatures(), functionBinding, functionDependencies);
+    Type outputType = getTrinoType(stdUDF.getOutputParameterSignature(), functionBinding, functionDependencies);
 
     // Generic MethodHandle for eval where all arguments are of type Object
     Class<?>[] genericMethodHandleArgumentTypes = getMethodHandleArgumentTypes(inputTypes, nullableArguments, true);
@@ -133,15 +145,6 @@ public abstract class StdUdfWrapper extends SqlScalarFunction {
     MethodHandle specificMethodHandle = MethodHandles.explicitCastArguments(genericMethodHandle, specificMethodType);
     return MethodHandles.insertArguments(specificMethodHandle, 0, stdUDF, inputTypes,
         outputType instanceof IntegerType, requiredFilesNextRefreshTime);
-  }
-
-  private List<ScalarFunctionImplementation.ArgumentProperty> getNullConventionForArguments(
-      boolean[] nullableArguments) {
-    return IntStream.range(0, nullableArguments.length)
-        .mapToObj(idx -> ScalarFunctionImplementation.ArgumentProperty.valueTypeArgumentProperty(
-            nullableArguments[idx] ? ScalarFunctionImplementation.NullConvention.USE_BOXED_TYPE
-                : ScalarFunctionImplementation.NullConvention.RETURN_NULL_ON_NULL))
-        .collect(Collectors.toList());
   }
 
   private StdData[] wrapArguments(StdUDF stdUDF, Type[] types, Object[] arguments) {
@@ -269,12 +272,12 @@ public abstract class StdUdfWrapper extends SqlScalarFunction {
     }
   }
 
-  private Type[] getTrinoTypes(List<String> parameterSignatures, Metadata metadata, BoundVariables boundVariables) {
-    return parameterSignatures.stream().map(p -> getTrinoType(p, metadata, boundVariables)).toArray(Type[]::new);
+  private Type[] getTrinoTypes(List<String> parameterSignatures, FunctionBinding functionBinding, FunctionDependencies functionDependencies) {
+    return parameterSignatures.stream().map(p -> getTrinoType(p, functionBinding, functionDependencies)).toArray(Type[]::new);
   }
 
-  private Type getTrinoType(String parameterSignature, Metadata metadata, BoundVariables boundVariables) {
-    return metadata.getType(applyBoundVariables(parseTypeSignature(parameterSignature, ImmutableSet.of()), boundVariables));
+  private Type getTrinoType(String parameterSignature, FunctionBinding functionBinding, FunctionDependencies functionDependencies) {
+    return functionDependencies.getType(applyBoundVariables(parseTypeSignature(parameterSignature, ImmutableSet.of()), functionBinding));
   }
 
   private Class<?>[] getMethodHandleArgumentTypes(Type[] argTypes, boolean[] nullableArguments,

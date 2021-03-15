@@ -1,5 +1,34 @@
 apply plugin: 'java'
 
+
+java {
+  sourceCompatibility = JavaVersion.VERSION_11
+}
+
+// /Library/Java/JavaVirtualMachines/jdk11.0.8-msft.jdk/Contents/Home
+assert hasProperty('java11Home') : "Set the property 'java11Home' in your your gradle.properties pointing to a Java 11.0.7+ installation"
+def javaExecutablesPath = new File(java11Home, 'bin')
+def javaExecutables = [:].withDefault { execName ->
+  def executable = new File(javaExecutablesPath, execName)
+  assert executable.exists() : "There is no ${execName} executable in ${javaExecutablesPath}"
+  executable
+}
+tasks.withType(AbstractCompile) {
+  options.with {
+    fork = true
+    forkOptions.javaHome = file(java11Home)
+  }
+}
+tasks.withType(Test) {
+  executable = javaExecutables.java
+}
+tasks.withType(JavaExec) {
+  executable = javaExecutables.java
+}
+tasks.withType(Javadoc) {
+  executable = javaExecutables.javadoc
+}
+
 dependencies {
   compile project(":transportable-udfs-api")
   compile project(":transportable-udfs-test:transportable-udfs-test-api")

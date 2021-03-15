@@ -5,7 +5,12 @@
  */
 package com.linkedin.transport.test.trino;
 
-import io.trino.metadata.BoundVariables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import io.trino.metadata.BoundSignature;
+import io.trino.metadata.FunctionBinding;
+import io.trino.metadata.FunctionDependencies;
+import io.trino.metadata.FunctionId;
 import io.trino.operator.scalar.AbstractTestFunctions;
 import io.trino.spi.type.Type;
 import com.google.common.collect.ImmutableMap;
@@ -16,11 +21,17 @@ import com.linkedin.transport.trino.TrinoFactory;
 import com.linkedin.transport.test.spi.SqlFunctionCallGenerator;
 import com.linkedin.transport.test.spi.SqlStdTester;
 import com.linkedin.transport.test.spi.ToPlatformTestOutputConverter;
+import io.trino.spi.type.TypeSignature;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static io.trino.spi.type.VarcharType.*;
+
 
 public class TrinoTester extends AbstractTestFunctions implements SqlStdTester {
+
+  //private static final Logger LOG = Logging.getLogger(TrinoTester.class);
 
   private StdFactory _stdFactory;
   private SqlFunctionCallGenerator _sqlFunctionCallGenerator;
@@ -47,8 +58,19 @@ public class TrinoTester extends AbstractTestFunctions implements SqlStdTester {
   @Override
   public StdFactory getStdFactory() {
     if (_stdFactory == null) {
-      _stdFactory = new TrinoFactory(new BoundVariables(ImmutableMap.of(), ImmutableMap.of()),
-          this.functionAssertions.getMetadata());
+      FunctionBinding functionBinding = new FunctionBinding(
+          new FunctionId("test"),
+          new BoundSignature("test", VARCHAR, ImmutableList.of(VARCHAR)),
+          ImmutableMap.of(),
+          ImmutableMap.of());
+      //_stdFactory = new TrinoFactory(new BoundVariables(ImmutableMap.of(), ImmutableMap.of()), this.functionAssertions.getMetadata());
+      Map<TypeSignature, Type> typeDependencies = new HashMap<>();
+      System.out.println("hello");
+      //LOG.info("hello");
+      for (Type type : this.functionAssertions.getMetadata().getTypes()) {
+        typeDependencies.put(type.getTypeSignature(), type);
+      }
+      _stdFactory = new TrinoFactory(functionBinding, new FunctionDependencies(this.functionAssertions.getMetadata(), typeDependencies, ImmutableSet.of()));
     }
     return _stdFactory;
   }
