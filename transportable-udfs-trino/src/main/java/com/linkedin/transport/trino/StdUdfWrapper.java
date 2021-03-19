@@ -128,8 +128,8 @@ public abstract class StdUdfWrapper extends SqlScalarFunction {
 
   private MethodHandle getMethodHandle(StdUDF stdUDF, FunctionBinding functionBinding, FunctionDependencies functionDependencies,
       boolean[] nullableArguments, AtomicLong requiredFilesNextRefreshTime) {
-    Type[] inputTypes = getTrinoTypes(stdUDF.getInputParameterSignatures(), functionBinding, functionDependencies);
-    Type outputType = getTrinoType(stdUDF.getOutputParameterSignature(), functionBinding, functionDependencies);
+    Type[] inputTypes = functionBinding.getBoundSignature().getArgumentTypes().toArray(new Type[0]);
+    Type outputType = functionBinding.getBoundSignature().getReturnType();
 
     // Generic MethodHandle for eval where all arguments are of type Object
     Class<?>[] genericMethodHandleArgumentTypes = getMethodHandleArgumentTypes(inputTypes, nullableArguments, true);
@@ -270,14 +270,6 @@ public abstract class StdUdfWrapper extends SqlScalarFunction {
     } else {
       return trinoType.getJavaType();
     }
-  }
-
-  private Type[] getTrinoTypes(List<String> parameterSignatures, FunctionBinding functionBinding, FunctionDependencies functionDependencies) {
-    return parameterSignatures.stream().map(p -> getTrinoType(p, functionBinding, functionDependencies)).toArray(Type[]::new);
-  }
-
-  private Type getTrinoType(String parameterSignature, FunctionBinding functionBinding, FunctionDependencies functionDependencies) {
-    return functionDependencies.getType(applyBoundVariables(parseTypeSignature(parameterSignature, ImmutableSet.of()), functionBinding));
   }
 
   private Class<?>[] getMethodHandleArgumentTypes(Type[] argTypes, boolean[] nullableArguments,

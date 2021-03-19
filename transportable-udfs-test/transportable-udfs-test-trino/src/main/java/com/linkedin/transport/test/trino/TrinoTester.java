@@ -65,8 +65,6 @@ public class TrinoTester extends AbstractTestFunctions implements SqlStdTester {
           ImmutableMap.of());
       //_stdFactory = new TrinoFactory(new BoundVariables(ImmutableMap.of(), ImmutableMap.of()), this.functionAssertions.getMetadata());
       Map<TypeSignature, Type> typeDependencies = new HashMap<>();
-      System.out.println("hello");
-      //LOG.info("hello");
       for (Type type : this.functionAssertions.getMetadata().getTypes()) {
         typeDependencies.put(type.getTypeSignature(), type);
       }

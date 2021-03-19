@@ -167,7 +167,7 @@ for each engine. For example, in Hive, you add the jar to the classpath using th
  and register the UDF using `CREATE FUNCTION` statement.
 In Trino, the jar is deployed to the `plugin` directory. However, a small patch is required for the Trino
 engine to recognize the jar as a plugin, since the generated Trino UDFs implement the `SqlScalarFunction` API,
-which is currently not part of Trino's SPI architecture. You can find the patch [here](transportable-udfs-documentation/transport-udfs-trino.patch) and apply it
+which is currently not part of Trino's SPI architecture. You can find the patch [here](docs/transport-udfs-trino.patch) and apply it
  before deploying your UDFs jar to the Trino engine.
  
 ## Contributing
