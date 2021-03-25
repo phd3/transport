@@ -28,12 +28,13 @@ public interface SqlStdTester extends StdTester {
   void assertFunctionCall(String functionCallString, Object expectedOutputData, Object expectedOutputType);
 
   default void check(TestCase testCase) {
-    assertFunctionCall(getSqlFunctionCallGenerator().getSqlFunctionCallString(testCase.getFunctionCall()),
-        getToPlatformTestOutputConverter().convertToTestOutput(testCase.getExpectedOutput(),
-            testCase.getInferredOutputType()), getPlatformType(testCase.getExpectedOutputType()));
+    assertFunctionCall(
+        getSqlFunctionCallGenerator().getSqlFunctionCallString(testCase.getFunctionCall()),
+        getToPlatformTestOutputConverter().convertToTestOutput(testCase.getExpectedOutput(), testCase.getInferredOutputType()),
+        getPlatformType(testCase));
   }
 
-  default Object getPlatformType(String typeSignature) {
-    return getStdFactory().createStdType(typeSignature).underlyingType();
+  default Object getPlatformType(TestCase testCase) {
+    return getStdFactory().createStdType(testCase.getExpectedOutputType()).underlyingType();
   }
 }

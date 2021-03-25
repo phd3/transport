@@ -27,6 +27,7 @@ import com.linkedin.transport.typesystem.GenericTypeSignatureElement;
 import io.trino.metadata.FunctionArgumentDefinition;
 import io.trino.metadata.FunctionBinding;
 import io.trino.metadata.FunctionDependencies;
+import io.trino.metadata.FunctionDependencyDeclaration;
 import io.trino.metadata.FunctionKind;
 import io.trino.metadata.FunctionMetadata;
 import io.trino.metadata.Signature;
@@ -38,9 +39,11 @@ import io.trino.spi.classloader.ThreadContextClassLoader;
 import io.trino.spi.function.InvocationConvention;
 import io.trino.spi.type.IntegerType;
 import io.trino.spi.type.Type;
+import io.trino.spi.type.TypeSignature;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -52,9 +55,9 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.ClassUtils;
 
 import static io.trino.metadata.Signature.*;
-import static io.trino.metadata.SignatureBinder.*;
 import static io.trino.spi.function.InvocationConvention.InvocationArgumentConvention.*;
 import static io.trino.spi.function.InvocationConvention.InvocationReturnConvention.*;
+import static io.trino.spi.function.OperatorType.*;
 import static io.trino.sql.analyzer.TypeSignatureTranslator.parseTypeSignature;
 import static io.trino.util.Reflection.*;
 
@@ -102,6 +105,27 @@ public abstract class StdUdfWrapper extends SqlScalarFunction {
   }
 
   @Override
+  public FunctionDependencyDeclaration getFunctionDependencies(FunctionBinding functionBinding) {
+    FunctionDependencyDeclaration.FunctionDependencyDeclarationBuilder builder = FunctionDependencyDeclaration.builder();
+
+    List<TypeSignature> inputTypeSignatures = new ArrayList<>();
+    builder.addType(parseTypeSignature(getStdUDF().getOutputParameterSignature(), ImmutableSet.of()));
+    for (String inputParameterSignature : getStdUDF().getInputParameterSignatures()) {
+      inputTypeSignatures.add(parseTypeSignature(inputParameterSignature, ImmutableSet.of()));
+      builder.addType(parseTypeSignature(inputParameterSignature, ImmutableSet.of()));
+    }
+
+    //
+    // getStdUDF().getStdFactory().
+    //builder.addOperatorSignature(COMPARISON, inputTypeSignatures);
+    builder.addOperatorSignature(EQUAL, inputTypeSignatures);
+    //builder.addOperatorSignature(EQUAL, ImmutableList.of(new TypeSignature("K"), new TypeSignature("K")));
+    //builder.addFunction(QualifiedName.of(functionBinding.getBoundSignature().getName()), functionBinding.getBoundSignature().getArgumentTypes());
+
+    return builder.build();
+  }
+
+  @Override
   public ScalarFunctionImplementation specialize(FunctionBinding functionBinding, FunctionDependencies functionDependencies) {
     StdFactory stdFactory = new TrinoFactory(functionBinding, functionDependencies);
     StdUDF stdUDF = getStdUDF();
@@ -122,12 +146,12 @@ public abstract class StdUdfWrapper extends SqlScalarFunction {
         functionBinding,
         FAIL_ON_NULL,
         argumentConventions,
-        getMethodHandle(stdUDF, functionBinding, functionDependencies, nullableArguments, requiredFilesNextRefreshTime));
+        getMethodHandle(stdUDF, functionBinding, nullableArguments, requiredFilesNextRefreshTime));
 
   }
 
-  private MethodHandle getMethodHandle(StdUDF stdUDF, FunctionBinding functionBinding, FunctionDependencies functionDependencies,
-      boolean[] nullableArguments, AtomicLong requiredFilesNextRefreshTime) {
+  private MethodHandle getMethodHandle(StdUDF stdUDF, FunctionBinding functionBinding, boolean[] nullableArguments,
+      AtomicLong requiredFilesNextRefreshTime) {
     Type[] inputTypes = functionBinding.getBoundSignature().getArgumentTypes().toArray(new Type[0]);
     Type outputType = functionBinding.getBoundSignature().getReturnType();
 

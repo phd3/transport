@@ -6,11 +6,8 @@
 package com.linkedin.transport.plugin;
 
 import com.google.common.collect.ImmutableList;
-import com.linkedin.transport.codegen.HiveWrapperGenerator;
 import com.linkedin.transport.codegen.TrinoWrapperGenerator;
-import com.linkedin.transport.codegen.SparkWrapperGenerator;
 import com.linkedin.transport.plugin.packaging.DistributionPackaging;
-import com.linkedin.transport.plugin.packaging.ShadedJarPackaging;
 import com.linkedin.transport.plugin.packaging.ThinJarPackaging;
 import java.io.IOException;
 import java.io.InputStream;
@@ -73,7 +70,7 @@ class Defaults {
               // converters drop dependencies with classifiers, so we apply this dependency explicitly
               getDependencyConfiguration(RUNTIME_ONLY, "io.trino:trino-main", "trino", "tests")
           ),
-          ImmutableList.of(new ThinJarPackaging(), new DistributionPackaging())),
+          ImmutableList.of(new ThinJarPackaging(), new DistributionPackaging()))/*,
       new Platform(
           "hive",
           Language.JAVA,
@@ -103,7 +100,7 @@ class Defaults {
           ImmutableList.of(new ShadedJarPackaging(
               ImmutableList.of("org.apache.hadoop", "org.apache.spark"),
               ImmutableList.of("com.linkedin.transport.spark.**")))
-      )
+      )*/
   );
 
   private static DependencyConfiguration getDependencyConfiguration(ConfigurationType configurationType,
