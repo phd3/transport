@@ -1,46 +1,29 @@
+apply plugin: 'application'
 apply plugin: 'java'
 
 java {
-  sourceCompatibility = JavaVersion.VERSION_11
-}
-
-// /Library/Java/JavaVirtualMachines/jdk11.0.8-msft.jdk/Contents/Home
-assert hasProperty('java11Home') : "Set the property 'java11Home' in your your gradle.properties pointing to a Java 11.0.7+ installation"
-def javaExecutablesPath = new File(java11Home, 'bin')
-def javaExecutables = [:].withDefault { execName ->
-  def executable = new File(javaExecutablesPath, execName)
-  assert executable.exists() : "There is no ${execName} executable in ${javaExecutablesPath}"
-  executable
-}
-tasks.withType(AbstractCompile) {
-  options.with {
-    fork = true
-    forkOptions.javaHome = file(java11Home)
+  toolchain {
+    languageVersion.set(JavaLanguageVersion.of(11))
   }
-}
-tasks.withType(Test) {
-  executable = javaExecutables.java
-}
-tasks.withType(JavaExec) {
-  executable = javaExecutables.java
-}
-tasks.withType(Javadoc) {
-  executable = javaExecutables.javadoc
 }
 
 dependencies {
   compile project(':transportable-udfs-api')
   compile project(':transportable-udfs-type-system')
   compile project(':transportable-udfs-utils')
+  //compileOnly(files('/Users/akrai/trino-main-352.jar'))
   compileOnly(group:'io.trino', name: 'trino-main', version: project.ext.'trino-version') {
     exclude 'group': 'com.google.collections', 'module': 'google-collections'
   }
+  //testCompile(files('/Users/akrai/trino-main-352.jar'))
   testCompile(group:'io.trino', name: 'trino-main', version: project.ext.'trino-version') {
     exclude 'group': 'com.google.collections', 'module': 'google-collections'
   }
+  //testCompile(files('/Users/akrai/trino-main-352-tests.jar'))
   testCompile(group:'io.trino', name: 'trino-main', version: project.ext.'trino-version', classifier: 'tests') {
     exclude 'group': 'com.google.collections', 'module': 'google-collections'
   }
+  //compileOnly(files('/Users/akrai/trino-spi-352.jar'))
   compileOnly(group:'io.trino', name: 'trino-spi', version: project.ext.'trino-version')
   compile('org.apache.hadoop:hadoop-hdfs:2.7.4')
   compile('org.apache.hadoop:hadoop-common:2.7.4')
