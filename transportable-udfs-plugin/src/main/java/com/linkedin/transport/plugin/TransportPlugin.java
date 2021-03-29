@@ -11,8 +11,10 @@ import com.linkedin.transport.plugin.tasks.GenerateWrappersTask;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -23,6 +25,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.scala.ScalaPlugin;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.testing.Test;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
@@ -47,33 +50,62 @@ import static com.linkedin.transport.plugin.SourceSetUtils.*;
  */
 public class TransportPlugin implements Plugin<Project> {
 
+  private static final String HIVE_ENGINE = "hive";
+  private static final String SPARK_ENGINE = "spark";
+  private static final String TRINO_ENGINE = "trino";
+
   public void apply(Project project) {
 
     TransportPluginConfig extension = project.getExtensions().create("transport", TransportPluginConfig.class, project);
+
+    SourceSetContainer sourceSets = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets();
+    SourceSet mainSourceSet = sourceSets.getByName(extension.mainSourceSetName);
+    SourceSet testSourceSet = sourceSets.getByName(extension.testSourceSetName);
 
     project.getPlugins().withType(JavaPlugin.class, (javaPlugin) -> {
       project.getPlugins().apply(ScalaPlugin.class);
       project.getPlugins().apply(DistributionPlugin.class);
       project.getConfigurations().create(ShadowBasePlugin.getCONFIGURATION_NAME());
 
-      JavaPluginConvention javaConvention = project.getConvention().getPlugin(JavaPluginConvention.class);
-      SourceSet mainSourceSet = javaConvention.getSourceSets().getByName(extension.mainSourceSetName);
-      SourceSet testSourceSet = javaConvention.getSourceSets().getByName(extension.testSourceSetName);
-
       configureBaseSourceSets(project, mainSourceSet, testSourceSet);
-      Defaults.DEFAULT_PLATFORMS.forEach(
-          platform -> configurePlatform(project, platform, mainSourceSet, testSourceSet, extension.outputDirFile));
     });
+
     // Disable Jacoco for platform test tasks as it is known to cause issues with Trino and Hive tests
     project.getPlugins().withType(JacocoPlugin.class, (jacocoPlugin) -> {
-        Defaults.DEFAULT_PLATFORMS.forEach(platform -> {
-          project.getTasksByName(testTaskName(platform), true).forEach(task -> {
-            JacocoTaskExtension jacocoExtension = task.getExtensions().findByType(JacocoTaskExtension.class);
-            if (jacocoExtension != null) {
-              jacocoExtension.setEnabled(false);
-            }
-          });
+      Arrays.asList(Defaults.TRINO_PLATFORM, Defaults.HIVE_PLATFORM).forEach(platform -> {
+        project.getTasksByName(testTaskName(platform), true).forEach(task -> {
+          JacocoTaskExtension jacocoExtension = task.getExtensions().findByType(JacocoTaskExtension.class);
+          if (jacocoExtension != null) {
+            jacocoExtension.setEnabled(false);
+          }
         });
+      });
+    });
+
+    project.afterEvaluate(p -> {
+      if (extension.engines == null || extension.engines.isEmpty()) {
+        throw new InvalidUserDataException("Please specify engines");
+      }
+
+      // Isolate engine/platform dependencies
+      // todo: assert jdk versions
+      extension.engines.forEach(engine -> {
+        if (engine.equalsIgnoreCase(HIVE_ENGINE)) {
+          project.getPlugins().withType(JavaPlugin.class, (javaPlugin) -> {
+            configurePlatform(project, Defaults.HIVE_PLATFORM, mainSourceSet, testSourceSet, extension.outputDirFile);
+          });
+
+        } else if (engine.equalsIgnoreCase(SPARK_ENGINE)) {
+          project.getPlugins().withType(JavaPlugin.class, (javaPlugin) -> {
+            configurePlatform(project, Defaults.SPARK_PLATFORM, mainSourceSet, testSourceSet, extension.outputDirFile);
+          });
+
+        } else if (engine.equalsIgnoreCase(TRINO_ENGINE)) {
+          project.getPlugins().withType(JavaPlugin.class, (javaPlugin) -> {
+            configurePlatform(project, Defaults.TRINO_PLATFORM, mainSourceSet, testSourceSet, extension.outputDirFile);
+          });
+        }
+      });
     });
   }
 

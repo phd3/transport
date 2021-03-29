@@ -17,10 +17,10 @@ gradlePlugin {
 publishing {
   publications {
     pluginPublication (MavenPublication) {
-      from    components.java
-      groupId    project.group
-      artifactId    "transportable-udfs-plugin"
-      version    project.version
+      from components.java
+      groupId project.group
+      artifactId "transportable-udfs-plugin"
+      version project.version
     }
   }
 }

@@ -54,9 +54,8 @@ public class TrinoMap extends TrinoData implements StdMap {
     _mapType = mapType;
 
     _stdFactory = stdFactory;
-    _keyEqualsMethod = ((TrinoFactory) stdFactory).resolveOperator(
-        OperatorType.EQUAL, ImmutableList.of(_keyType, _keyType), simpleConvention(NULLABLE_RETURN, BLOCK_POSITION, BLOCK_POSITION))
-        .getMethodHandle();
+    _keyEqualsMethod = ((TrinoFactory) stdFactory).getOperatorHandle(
+        OperatorType.EQUAL, ImmutableList.of(_keyType, _keyType), simpleConvention(NULLABLE_RETURN, BLOCK_POSITION, BLOCK_POSITION));
   }
 
   public TrinoMap(Block block, Type mapType, StdFactory stdFactory) {

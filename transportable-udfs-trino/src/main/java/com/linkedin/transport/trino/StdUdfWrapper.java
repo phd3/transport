@@ -104,10 +104,10 @@ public abstract class StdUdfWrapper extends SqlScalarFunction {
   public FunctionDependencyDeclaration getFunctionDependencies(FunctionBinding functionBinding) {
     FunctionDependencyDeclaration.FunctionDependencyDeclarationBuilder builder = FunctionDependencyDeclaration.builder();
 
-    List<TypeSignature> inputTypeSignatures = new ArrayList<>();
+    //List<TypeSignature> inputTypeSignatures = new ArrayList<>();
     builder.addType(parseTypeSignature(getStdUDF().getOutputParameterSignature(), ImmutableSet.of()));
     for (String inputParameterSignature : getStdUDF().getInputParameterSignatures()) {
-      inputTypeSignatures.add(parseTypeSignature(inputParameterSignature, ImmutableSet.of()));
+      //inputTypeSignatures.add(parseTypeSignature(inputParameterSignature, ImmutableSet.of()));
       builder.addType(parseTypeSignature(inputParameterSignature, ImmutableSet.of()));
     }
 
@@ -125,9 +125,8 @@ public abstract class StdUdfWrapper extends SqlScalarFunction {
 
   @Override
   public ScalarFunctionImplementation specialize(FunctionBinding functionBinding, FunctionDependencies functionDependencies) {
-    //StdFactory stdFactory = new TrinoFactory(functionBinding, functionDependencies);
+    StdFactory stdFactory = new TrinoFactory(functionBinding, functionDependencies);
     //StdFactory stdFactory = new TrinoFactory(functionDependencies.getMetadata());
-    StdFactory stdFactory = new TrinoFactory(null);
     StdUDF stdUDF = getStdUDF();
     stdUDF.init(stdFactory);
     // Subtract a small jitter value so that refresh is triggered on first call

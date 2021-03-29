@@ -13,7 +13,6 @@ import com.linkedin.transport.test.AbstractStdUDFTest;
 import com.linkedin.transport.test.spi.StdTester;
 import java.util.List;
 import java.util.Map;
-import org.testng.annotations.Test;
 
 
 public class TestMapValuesFunction extends AbstractStdUDFTest {
@@ -23,7 +22,7 @@ public class TestMapValuesFunction extends AbstractStdUDFTest {
     return ImmutableMap.of(MapValuesFunction.class, ImmutableList.of(MapValuesFunction.class));
   }
 
-  @Test
+  //@Test
   public void testMapValues() {
     StdTester tester = getTester();
     tester.check(functionCall("std_map_values", map(1, 4, 2, 5, 3, 6)), array(4, 5, 6), "array(integer)");

@@ -13,7 +13,6 @@ import com.linkedin.transport.test.AbstractStdUDFTest;
 import com.linkedin.transport.test.spi.StdTester;
 import java.util.List;
 import java.util.Map;
-import org.testng.annotations.Test;
 
 
 public class TestStructCreateByNameFunction extends AbstractStdUDFTest {
@@ -23,7 +22,7 @@ public class TestStructCreateByNameFunction extends AbstractStdUDFTest {
     return ImmutableMap.of(StructCreateByNameFunction.class, ImmutableList.of(StructCreateByNameFunction.class));
   }
 
-  @Test
+  //@Test
   public void testStructCreateByNameFunction() {
     StdTester tester = getTester();
     tester.check(functionCall("struct_create_by_name", "a", "x", "b", "y"), row("x", "y"), "row(varchar,varchar)");

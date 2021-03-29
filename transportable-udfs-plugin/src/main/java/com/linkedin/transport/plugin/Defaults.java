@@ -6,8 +6,11 @@
 package com.linkedin.transport.plugin;
 
 import com.google.common.collect.ImmutableList;
+import com.linkedin.transport.codegen.HiveWrapperGenerator;
+import com.linkedin.transport.codegen.SparkWrapperGenerator;
 import com.linkedin.transport.codegen.TrinoWrapperGenerator;
 import com.linkedin.transport.plugin.packaging.DistributionPackaging;
+import com.linkedin.transport.plugin.packaging.ShadedJarPackaging;
 import com.linkedin.transport.plugin.packaging.ThinJarPackaging;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,7 +29,7 @@ class Defaults {
   }
 
   // The versions of the Transport and supported platforms to apply corresponding versions of the platform dependencies
-  private static final Properties DEFAULT_VERSIONS = loadDefaultVersions();
+  static final Properties DEFAULT_VERSIONS = loadDefaultVersions();
 
   private static Properties loadDefaultVersions() {
     try (InputStream is =
@@ -53,7 +56,7 @@ class Defaults {
       getDependencyConfiguration(RUNTIME_ONLY, "com.linkedin.transport:transportable-udfs-test-generic", "transport")
   );
 
-  static final List<Platform> DEFAULT_PLATFORMS = ImmutableList.of(
+  static final Platform TRINO_PLATFORM =
       new Platform(
           "trino",
           Language.JAVA,
@@ -70,7 +73,9 @@ class Defaults {
               // converters drop dependencies with classifiers, so we apply this dependency explicitly
               getDependencyConfiguration(RUNTIME_ONLY, "io.trino:trino-main", "trino", "tests")
           ),
-          ImmutableList.of(new ThinJarPackaging(), new DistributionPackaging()))/*,
+          ImmutableList.of(new ThinJarPackaging(), new DistributionPackaging()));
+
+  static final Platform HIVE_PLATFORM =
       new Platform(
           "hive",
           Language.JAVA,
@@ -83,7 +88,9 @@ class Defaults {
               getDependencyConfiguration(RUNTIME_ONLY, "com.linkedin.transport:transportable-udfs-test-hive",
                   "transport")
           ),
-          ImmutableList.of(new ShadedJarPackaging(ImmutableList.of("org.apache.hadoop", "org.apache.hive"), null))),
+          ImmutableList.of(new ShadedJarPackaging(ImmutableList.of("org.apache.hadoop", "org.apache.hive"), null)));
+
+  static final Platform SPARK_PLATFORM =
       new Platform(
           "spark",
           Language.SCALA,
@@ -99,9 +106,7 @@ class Defaults {
           ),
           ImmutableList.of(new ShadedJarPackaging(
               ImmutableList.of("org.apache.hadoop", "org.apache.spark"),
-              ImmutableList.of("com.linkedin.transport.spark.**")))
-      )*/
-  );
+              ImmutableList.of("com.linkedin.transport.spark.**"))));
 
   private static DependencyConfiguration getDependencyConfiguration(ConfigurationType configurationType,
       String module, String platform) {
