@@ -51,7 +51,7 @@ subprojects {
   }
 
   plugins.withType(JavaPlugin) {
-    //project.apply(plugin: 'checkstyle')
+    project.apply(plugin: 'checkstyle')
 
     dependencies {
       testCompile 'org.testng:testng:6.11'
@@ -61,11 +61,14 @@ subprojects {
       useTestNG()
     }
 
-/*    checkstyle {
-      configFile = file("${rootDir}/../gradle/checkstyle/checkstyle.xml")
-      configProperties = ['config_loc' : "${rootDir}/../gradle/checkstyle/"]
+    checkstyle {
+      configFile = rootProject.file('../gradle/checkstyle/checkstyle.xml')
+      configProperties = [
+          'configDir': rootProject.file('../gradle/checkstyle'),
+          'baseDir': "${rootDir}/.."
+      ]
       toolVersion '8.23'
-    }*/
+    }
   }
 
   plugins.withType(ScalaPlugin) {
