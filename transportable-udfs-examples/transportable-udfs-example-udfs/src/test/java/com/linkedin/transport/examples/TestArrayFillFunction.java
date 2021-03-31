@@ -13,6 +13,7 @@ import com.linkedin.transport.test.AbstractStdUDFTest;
 import com.linkedin.transport.test.spi.StdTester;
 import java.util.List;
 import java.util.Map;
+import org.testng.annotations.Test;
 
 
 public class TestArrayFillFunction extends AbstractStdUDFTest {
@@ -22,7 +23,7 @@ public class TestArrayFillFunction extends AbstractStdUDFTest {
     return ImmutableMap.of(ArrayFillFunction.class, ImmutableList.of(ArrayFillFunction.class));
   }
 
-  //@Test
+  @Test
   public void testArrayFill() {
     StdTester tester = getTester();
     tester.check(functionCall("array_fill", 1, 5L), array(1, 1, 1, 1, 1), "array(integer)");

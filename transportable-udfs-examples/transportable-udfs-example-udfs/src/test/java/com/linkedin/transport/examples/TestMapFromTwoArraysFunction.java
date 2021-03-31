@@ -13,6 +13,7 @@ import com.linkedin.transport.test.AbstractStdUDFTest;
 import com.linkedin.transport.test.spi.StdTester;
 import java.util.List;
 import java.util.Map;
+import org.testng.annotations.Test;
 
 
 public class TestMapFromTwoArraysFunction extends AbstractStdUDFTest {
@@ -22,7 +23,7 @@ public class TestMapFromTwoArraysFunction extends AbstractStdUDFTest {
     return ImmutableMap.of(MapFromTwoArraysFunction.class, ImmutableList.of(MapFromTwoArraysFunction.class));
   }
 
-  //@Test
+  @Test
   public void testMapFromTwoArraysFunction() {
     StdTester tester = getTester();
     tester.check(functionCall("map_from_two_arrays", array(1, 2), array("a", "b")), map(1, "a", 2, "b"),

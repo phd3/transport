@@ -6,6 +6,8 @@
 package com.linkedin.transport.trino;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.linkedin.transport.api.StdFactory;
 import com.linkedin.transport.api.data.StdArray;
@@ -30,8 +32,10 @@ import com.linkedin.transport.trino.data.TrinoMap;
 import com.linkedin.transport.trino.data.TrinoString;
 import com.linkedin.transport.trino.data.TrinoStruct;
 import io.airlift.slice.Slices;
+import io.trino.metadata.BoundSignature;
 import io.trino.metadata.FunctionBinding;
 import io.trino.metadata.FunctionDependencies;
+import io.trino.metadata.FunctionId;
 import io.trino.metadata.Metadata;
 import io.trino.metadata.OperatorNotFoundException;
 import io.trino.spi.function.InvocationConvention;
@@ -47,6 +51,7 @@ import java.util.stream.Collectors;
 
 import static io.trino.metadata.SignatureBinder.*;
 import static io.trino.sql.analyzer.TypeSignatureTranslator.*;
+import static io.trino.type.UnknownType.*;
 
 
 public class TrinoFactory implements StdFactory {
@@ -55,11 +60,13 @@ public class TrinoFactory implements StdFactory {
   final FunctionDependencies functionDependencies;
   final Metadata metadata;
 
-/*  public TrinoFactory(Metadata metadata) {
+  public TrinoFactory(Metadata metadata) {
     this.metadata = metadata;
     this.functionBinding = new FunctionBinding(
-        new FunctionId("test"), new BoundSignature("test", UNKNOWN, ImmutableList.of()), ImmutableMap.of(), ImmutableMap.of());
-  }*/
+        new FunctionId("test"), new BoundSignature("test", UNKNOWN, ImmutableList.of()), ImmutableMap.of(), ImmutableMap
+        .of());
+    this.functionDependencies = null;
+  }
 
   public TrinoFactory(FunctionBinding functionBinding, FunctionDependencies functionDependencies) {
     this.functionBinding = functionBinding;

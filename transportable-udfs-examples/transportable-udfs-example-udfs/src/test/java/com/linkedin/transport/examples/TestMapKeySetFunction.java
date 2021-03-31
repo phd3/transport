@@ -13,6 +13,7 @@ import com.linkedin.transport.test.AbstractStdUDFTest;
 import com.linkedin.transport.test.spi.StdTester;
 import java.util.List;
 import java.util.Map;
+import org.testng.annotations.Test;
 
 
 public class TestMapKeySetFunction extends AbstractStdUDFTest {
@@ -22,7 +23,7 @@ public class TestMapKeySetFunction extends AbstractStdUDFTest {
     return ImmutableMap.of(MapKeySetFunction.class, ImmutableList.of(MapKeySetFunction.class));
   }
 
-  //@Test
+  @Test
   public void testMapKeySet() {
     StdTester tester = getTester();
     tester.check(functionCall("map_key_set", map(1, 4, 2, 5, 3, 6)), array(1, 2, 3), "array(integer)");

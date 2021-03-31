@@ -6,4 +6,5 @@
 <suppressions>
     <!-- Ignore all checks for generated sources -->
     <suppress checks=".*" files=".*generatedWrappers.*"/>
+    <suppress checks=".*" files=".*io.trino.metadata.*"/>
 </suppressions>
